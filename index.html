@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghostface Playlist</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #e63946;
+    --dark: #0a0a0a;
+    --mid: #141414;
+    --surface: #1c1c1c;
+    --border: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 280px;
+    grid-template-areas:
+      "header header"
+      "main   sidebar"
+      "controls controls";
+  }
+
+  header {
+    grid-area: header;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+    color: var(--red);
+    line-height: 1;
+  }
+
+  .meta {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .progress-bar-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .progress-bar {
+    width: 140px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--red);
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  main {
+    grid-area: main;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .clip-label {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    background: rgba(0,0,0,0.7);
+    padding: 4px 8px;
+    border-radius: 2px;
+  }
+
+  aside {
+    grid-area: sidebar;
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    font-size: 11px;
+  }
+
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-track { background: var(--dark); }
+  aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .sidebar-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    background: var(--mid);
+    z-index: 1;
+  }
+
+  .playlist-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s;
+    color: var(--muted);
+  }
+
+  .playlist-item:hover { background: var(--surface); color: var(--text); }
+
+  .playlist-item.active {
+    background: var(--surface);
+    color: var(--text);
+    border-left: 2px solid var(--red);
+  }
+
+  .item-num {
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 24px;
+    text-align: right;
+  }
+
+  .item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .item-playing {
+    color: var(--red);
+    font-size: 9px;
+  }
+
+  .controls {
+    grid-area: controls;
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--mid);
+  }
+
+  button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  button:hover { background: var(--surface); border-color: var(--muted); }
+  button.active { border-color: var(--red); color: var(--red); }
+
+  .speed-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 5px 8px;
+    cursor: pointer;
+  }
+
+  .spacer { flex: 1; }
+
+  .clip-counter {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ghostface</h1>
+  <span class="meta">246 CLIPS &bull; PLAYLIST</span>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span id="progressText">0%</span>
+  </div>
+</header>
+
+<main>
+  <video id="vid" autoplay playsinline></video>
+  <div class="clip-label" id="clipLabel"></div>
+</main>
+
+<aside>
+  <div class="sidebar-header">Queue</div>
+  <div id="playlist"></div>
+</aside>
+
+<div class="controls">
+  <button id="btnPrev" onclick="go(-1)">&#9664; PREV</button>
+  <button id="btnPlayPause" onclick="togglePause()">&#10074;&#10074; PAUSE</button>
+  <button id="btnNext" onclick="go(1)">NEXT &#9654;</button>
+  <button id="btnShuffle" onclick="toggleShuffle()">SHUFFLE</button>
+  <button id="btnLoop" onclick="toggleLoop()" class="active">LOOP ALL</button>
+  <span class="spacer"></span>
+  <span class="speed-label">SPEED</span>
+  <select id="speedSelect" onchange="setSpeed(this.value)">
+    <option value="0.5">0.5x</option>
+    <option value="1" selected>1x</option>
+    <option value="1.5">1.5x</option>
+    <option value="2">2x</option>
+  </select>
+  <span class="clip-counter" id="counter">1 / 246</span>
+</div>
+
+<script>
+const BASE = 'https://subservientghostface.com/clips/';
+const FILES = [
+"cindy_001__v3.webm","white_chicks_001__v3.webm","run_bitch_run_001__v3.webm","run_bitch_run_002__v3.webm","fnaf_001__v3.webm","weapons_001__v3.webm","werewolf_001__v3.webm","41_001__v3.webm","clock_001__v3.webm","m3gan_001__v3.webm","toy_story_001__v3.webm","cannes_001__v3.webm","applause_001__v3.webm","safe_001__v3.webm","he_man_001__v3.webm","67_001__v3.webm","backrooms_001__v3.webm","camcorder_001__v3.webm","brenda_001__v3.webm","jigsaw_001__v4.webm","scream_001__v5.webm","diddy_001__v3.webm","texas_chainsaw_massacre_001__v3.webm","spider_man_001__v3.webm","wazzap_001__v3.webm","kai_cenat_001__v3.webm","home_001__v3.webm","pearl_001__v3.webm","hawk_tua_001__v3.webm","popcorn_bucket_001__v3.webm","wakanda_001__v3.webm","npc_001__v3.webm","idle_001__v3.webm","golf_001__v3.webm","obsession_001__v3.webm","chad_001__v3.webm","demure_001__v3.webm","big_guy_001__v3.webm","scuba_dance_001__v3.webm","dune_001__v3.webm","aegyo_001__v3.webm","aegyo_002__v3.webm","kiss_001__v3.webm","pin_001__v3.webm","pose_001__v3.webm","shy_001__v3.webm","baseball_001__v3.webm","bowling_001__v3.webm","box_001__v3.webm","f1_001__v3.webm","goal_001__v3.webm","goal_002__v3.webm","kylian_001__v3.webm","messi_001__v3.webm","basketball_001__v3.webm","swim_001__v3.webm","tennis_002__v3.webm","pickleball_001__v3.webm","eating_001__v3.webm","hump_001__v3.webm","moon_001__v3.webm","rub_001__v3.webm","suffocate_001__v3.webm","vagina_001__v3.webm","air_guitar_001__v3.webm","bow_001__v3.webm","bow_002__v3.webm","bow_003__v3.webm","bye_001__v3.webm","shoey_001__v3.webm","passinho_001__v3.webm","disco_001__v3.webm","dab_001__v3.webm","gritty_001__v3.webm","macerena_001__v3.webm","robot_001__v3.webm","twerk_001__v5.webm","music_video_001__v2.webm","vogue_001__v3.webm","ymca_001__v3.webm","die_001__v3.webm","doomscroll_001__v3.webm","drums_001__v4.webm","fart_001__v3.webm","strong_hand_001__v3.webm","flip_off_001__v3.webm","idea_001__v3.webm","doofy_001__v4.webm","gail_hailstorm_001__v3.webm","jumping_001__v3.webm","lol_001__v4.webm","ninja_001__v3.webm","no_001__v3.webm","no_002__v3.webm","no_003__v3.webm","no_004__v3.webm","john_wick_001__v5.webm","dildo_001__v3.webm","pronouns_001__v3.webm","hard_refusal_001__v3.webm","hard_refusal_002__v3.webm","hard_refusal_003__v3.webm","it_001__v3.webm","peek_a_boo_001__v3.webm","peek_a_boo_002__v3.webm","pick_001__v3.webm","propose_001__v3.webm","purr_001__v3.webm","purr_002__v3.webm","push_ups_001__v3.webm","ma_001__v3.webm","scared_001__v3.webm","scratch_001__v3.webm","lounge_001__v3.webm","sit_ups_001__v3.webm","sneak_002__v3.webm","hide_001__v6.webm","stand_001__v3.webm","stretch_001__v3.webm","dumb_dumb_001__v3.webm","surf_001__v5.webm","surf_002__v3.webm","vomit_001__v3.webm","nascar_001__v3.webm","yoga_001__v3.webm","thank_001__v3.webm","referee_002__v3.webm","crash_out_001__v3.webm","thumbs_001__v3.webm","thumbs_down_001__v3.webm","soccer_001__v3.webm","yes_001__v3.webm","yes_002__v3.webm","yes_003__v3.webm","yes_004__v3.webm","what_001__v2.webm","football_001__v3.webm","play_001__v3.webm","boobs_001__v3.webm","mime_001__v4.webm","cuck_001__v3.webm","tea_001__v3.webm","grwm_001__v3.webm","make_out_001__v3.webm","green_screen_001__v3.webm","trailer_001__v3.webm","tree_001__v3.webm","arrest_001__v3.webm","jar_of_weed_001__v3.webm","hula_001__v3.webm","watching_tv_using_remote_001__v3.webm","give_me_a_movie_ticket_002__v3.webm","reveal_001__v3.webm","paint_001__v3.webm","scare_001__v5.webm","nurse_ratched_001__v3.webm","gladys_001__v3.webm","substance_001__v3.webm","substance_002__v3.webm","freddy_001__v3.webm","get_out_001__v3.webm","plate_plate_plate_001__v3.webm","ai_001__v3.webm","pee_001__v3.webm","white_people_001__v3.webm","window_001__v3.webm","candyman_001__v3.webm","jason_001__v3.webm","i_know_what_you_did_last_summer_001__v3.webm","tung_001__v3.webm","wheel_001__v3.webm","wheel_002__v3.webm","wheel_003__v3.webm","make_it_rain_001__v3.webm","hoodie_001__v3.webm","weed_001__v3.webm","midsommar_001__v3.webm","pax_001__v3.webm","bong_001__v3.webm","loop_bear_001__v3.webm","clean_001__v3.webm","survivor_001__v3.webm","wave_sup_001__v3.webm","wave_sup_002__v3.webm","wave_sup_003__v3.webm","jump_002__v3.webm","hopscotch_001__v3.webm","hopscotch_002__v3.webm","skip_001__v3.webm","walk_in_walk_out_001__v3.webm","walk_in_walk_out_002__v3.webm","walk_in_walk_out_003__v3.webm","exaggerated_wow_001__v3.webm","exaggerated_wow_002__v3.webm","hands_w_001__v3.webm","cool_guy_hang_10_001__v3.webm","king_queen_001__v3.webm","sweat_flick_001__v3.webm","shushes_001__v3.webm","shushes_002__v3.webm","shushes_003__v3.webm","pointing_to_camera_001__v3.webm","lights_001__v3.webm","glitch_001__v3.webm","lebron_001__v3.webm","beer_001__v3.webm","barbarian_001__v3.webm","stab_001__v3.webm","longlegs_001__v3.webm","fortnite_001__v3.webm","mid_001__v3.webm","money_001__v4.webm","ray_001__v3.webm","smile_001__v3.webm","stephen_001__v3.webm","terrifier_001__v3.webm","wicked_001__v3.webm","chefs_kiss_001__v3.webm","chefs_kiss_002__v3.webm","chris_patrick_001__v2.webm","horse_001__v3.webm","cowboy_001__v3.webm","subservient_chicken_001__v3.webm","subservient_chicken_002__v3.webm","looksmax_001__v3.webm","winning_001__v3.webm","cristiano_ronaldo_001__v3.webm","sleep_001__v3.webm","ping_pong_001__v3.webm","dance_001__v3.webm","dance_002__v3.webm","dance_003__v3.webm","dance_004__v3.webm","dance_005__v3.webm","dance_006__v3.webm","dance_007__v3.webm","dance_008__v3.webm","dance_009__v3.webm","dance_010__v3.webm","dance_011__v3.webm","dance_012__v3.webm","dance_013__v3.webm","dance_014__v3.webm","dance_015__v3.webm","dance_016__v3.webm","dance_017__v3.webm"
+];
+
+let order = [...FILES.keys()];
+let current = 0;
+let shuffled = false;
+let looping = true;
+let paused = false;
+
+const vid = document.getElementById('vid');
+const playlistEl = document.getElementById('playlist');
+const counter = document.getElementById('counter');
+const clipLabel = document.getElementById('clipLabel');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+
+function buildPlaylist() {
+  playlistEl.innerHTML = '';
+  order.forEach((fileIdx, pos) => {
+    const name = FILES[fileIdx].replace(/_v\d+\.webm$/, '').replace(/_/g, ' ');
+    const div = document.createElement('div');
+    div.className = 'playlist-item' + (pos === current ? ' active' : '');
+    div.id = 'item-' + pos;
+    div.innerHTML = `<span class="item-num">${pos + 1}</span><span class="item-name">${name}</span>${pos === current ? '<span class="item-playing">&#9654;</span>' : ''}`;
+    div.onclick = () => { current = pos; loadCurrent(); };
+    playlistEl.appendChild(div);
+  });
+}
+
+function updatePlaylist() {
+  document.querySelectorAll('.playlist-item').forEach((el, i) => {
+    el.className = 'playlist-item' + (i === current ? ' active' : '');
+    el.innerHTML = `<span class="item-num">${i + 1}</span><span class="item-name">${el.querySelector('.item-name').textContent}</span>${i === current ? '<span class="item-playing">&#9654;</span>' : ''}`;
+  });
+  const active = document.getElementById('item-' + current);
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function loadCurrent() {
+  const fileIdx = order[current];
+  const file = FILES[fileIdx];
+  vid.src = BASE + file;
+  vid.playbackRate = parseFloat(document.getElementById('speedSelect').value);
+  vid.play();
+  paused = false;
+  document.getElementById('btnPlayPause').textContent = '⏸ PAUSE';
+  const name = file.replace(/_v\d+\.webm$/, '').replace(/_/g, ' ');
+  clipLabel.textContent = name;
+  counter.textContent = (current + 1) + ' / ' + order.length;
+  const pct = Math.round(((current + 1) / order.length) * 100);
+  progressFill.style.width = pct + '%';
+  progressText.textContent = pct + '%';
+  updatePlaylist();
+}
+
+function go(dir) {
+  current = (current + dir + order.length) % order.length;
+  loadCurrent();
+}
+
+function togglePause() {
+  if (paused) { vid.play(); paused = false; document.getElementById('btnPlayPause').textContent = '⏸ PAUSE'; }
+  else { vid.pause(); paused = true; document.getElementById('btnPlayPause').textContent = '▶ PLAY'; }
+}
+
+function toggleShuffle() {
+  shuffled = !shuffled;
+  document.getElementById('btnShuffle').classList.toggle('active', shuffled);
+  if (shuffled) {
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+  } else {
+    order = [...FILES.keys()];
+  }
+  current = 0;
+  buildPlaylist();
+  loadCurrent();
+}
+
+function toggleLoop() {
+  looping = !looping;
+  document.getElementById('btnLoop').classList.toggle('active', looping);
+}
+
+function setSpeed(val) {
+  vid.playbackRate = parseFloat(val);
+}
+
+vid.addEventListener('ended', () => {
+  if (current < order.length - 1) {
+    current++;
+    loadCurrent();
+  } else if (looping) {
+    current = 0;
+    loadCurrent();
+  }
+});
+
+buildPlaylist();
+loadCurrent();
+</script>
+</body>
+</html>
